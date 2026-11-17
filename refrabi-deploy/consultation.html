@@ -1,0 +1,436 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>個別相談の準備｜Refra美 完全マンツーマン伴走</title>
+<meta name="description" content="7つの質問に答えるだけで、LINEに送る相談メモが完成します。回答はあなたの端末にだけ保存され、自動送信はされません。">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#587568">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8D%83%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=Zen+Old+Mincho:wght@600;700&family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+/* =====================================================================
+ * Refra美 個別相談 準備ページ（7問ステップ）
+ *  - 1問ずつ表示 / 選択肢中心 / localStorage 途中保存 / 自動送信しない
+ *  - 最後に LINE 相談メモを生成 → コピー（フォールバック付き）→ LINEを別タブ
+ *  - 顔写真・病歴・診断名はこの画面で収集しない
+ *  - LINE_URL は下の CONFIG から変更可能
+ * ===================================================================== */
+:root{
+  color-scheme:light;
+  --ink:#34413b; --ink-soft:#5f6b65; --mint:#afcbbd; --mint-deep:#587568;
+  --mint-pale:#e4eee8; --beige:#e7d8c5; --cream:#f7f1e8; --paper:#fffdf9;
+  --line:rgba(52,65,59,.16); --line-soft:rgba(52,65,59,.08); --white:#fff; --line-green:#06C755;
+  --f-body:"Zen Kaku Gothic New","Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;
+  --f-disp:"Zen Old Mincho","Hiragino Mincho ProN",serif;
+  --f-en:"Outfit",sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--cream); color:var(--ink); font-family:var(--f-body); font-size:16px; line-height:1.9; letter-spacing:.02em; text-wrap:pretty}
+a{color:inherit}
+.skip{position:absolute;left:-999px;top:0;background:var(--mint-deep);color:#fff;padding:10px 16px;z-index:50;border-radius:0 0 8px 0}
+.skip:focus{left:0}
+
+.topbar{height:60px; display:flex; align-items:center; background:rgba(255,253,249,.9); backdrop-filter:blur(10px); border-bottom:1px solid var(--line-soft); position:sticky; top:0; z-index:20}
+.topbar .wrap{display:flex; align-items:center; justify-content:space-between}
+.wrap{max-width:640px; margin:0 auto; padding:0 20px; width:100%}
+.brand{display:flex; align-items:center; gap:10px; text-decoration:none; font-weight:700}
+.brand img{width:30px;height:30px;border-radius:50%}
+.brand small{display:block; font-family:var(--f-en); font-size:9px; letter-spacing:.22em; color:var(--ink-soft); font-weight:400}
+.back{font-size:13px; color:var(--ink-soft); text-decoration:none}
+
+.head{padding:40px 0 8px; text-align:center}
+.head .ey{font-family:var(--f-en); font-size:12px; letter-spacing:.24em; color:var(--mint-deep); font-weight:600; text-transform:uppercase}
+.head h1{font:700 clamp(24px,4.6vw,32px)/1.5 var(--f-disp); margin:12px 0 0}
+.head p{color:var(--ink-soft); font-size:14.5px; margin:14px 0 0}
+
+/* progress */
+.bar{margin:26px auto 0; max-width:640px; padding:0 20px}
+.bar__track{height:6px; background:var(--white); border-radius:999px; overflow:hidden; box-shadow:inset 0 0 0 1px var(--line-soft)}
+.bar__fill{height:100%; width:0; background:var(--mint-deep); border-radius:999px; transition:width .35s ease}
+.bar__meta{display:flex; justify-content:space-between; font-size:12px; color:var(--ink-soft); margin-top:8px; font-family:var(--f-en); letter-spacing:.06em}
+
+/* card */
+.stage{padding:24px 0 60px}
+.card{background:var(--white); border-radius:20px; padding:30px 26px; box-shadow:0 10px 34px rgba(52,65,59,.08); min-height:340px; display:flex; flex-direction:column}
+@media(min-width:560px){.card{padding:40px 38px}}
+.qno{font-family:var(--f-en); font-size:12px; letter-spacing:.18em; color:var(--mint-deep); font-weight:600}
+.qtitle{font:700 clamp(19px,3vw,23px)/1.6 var(--f-body); margin:10px 0 4px}
+.qhint{font-size:13px; color:var(--ink-soft); margin:0 0 22px}
+
+/* options */
+.opts{display:grid; gap:10px; margin-top:6px}
+.opt{display:flex; align-items:center; gap:12px; padding:15px 18px; border:1.5px solid var(--line); border-radius:12px; cursor:pointer; transition:.15s; background:var(--white); font-size:15.5px; min-height:52px}
+.opt:hover{border-color:var(--mint)}
+.opt input{position:absolute; opacity:0; width:0; height:0}
+.opt .box{flex:0 0 auto; width:22px; height:22px; border:1.5px solid var(--line); border-radius:6px; display:grid; place-items:center; transition:.15s}
+.opt input[type=radio]+.box{border-radius:50%}
+.opt.is-on{border-color:var(--mint-deep); background:var(--mint-pale)}
+.opt.is-on .box{background:var(--mint-deep); border-color:var(--mint-deep)}
+.opt.is-on .box::after{content:"✓"; color:#fff; font-size:13px; font-weight:700}
+
+/* free text */
+textarea, input[type=text]{width:100%; font-family:var(--f-body); font-size:15.5px; line-height:1.8; color:var(--ink); background:var(--white); border:1.5px solid var(--line); border-radius:12px; padding:14px 16px; resize:vertical; margin-top:6px}
+textarea:focus, input[type=text]:focus{outline:none; border-color:var(--mint-deep)}
+textarea{min-height:120px}
+.opt-other{margin-top:4px}
+.opt-other input{margin-top:8px}
+
+/* nav */
+.nav{display:flex; gap:12px; margin-top:auto; padding-top:28px}
+.btn{display:inline-flex; align-items:center; justify-content:center; gap:.5em; font-family:var(--f-body); font-weight:700; font-size:15px; border:0; border-radius:999px; padding:15px 26px; min-height:52px; cursor:pointer; text-decoration:none; transition:.18s}
+.btn--primary{background:var(--mint-deep); color:#fff; flex:1}
+.btn--primary:hover{filter:brightness(1.06)}
+.btn--primary:disabled{opacity:.4; cursor:not-allowed}
+.btn--ghost{background:transparent; color:var(--ink-soft); border:1px solid var(--line)}
+.btn--ghost:hover{background:var(--cream)}
+.btn--line{background:var(--line-green); color:#fff; width:100%}
+.btn--copy{background:var(--mint-deep); color:#fff; width:100%}
+
+/* privacy note */
+.privacy{max-width:640px; margin:22px auto 0; padding:0 20px; font-size:12px; color:var(--ink-soft); line-height:1.9; text-align:center}
+.privacy strong{color:var(--ink)}
+
+/* result */
+.result h2{font:700 24px/1.5 var(--f-disp); margin:0}
+.memo{margin-top:20px; background:var(--cream); border:1px dashed var(--line); border-radius:14px; padding:20px; font-family:var(--f-body); font-size:14px; line-height:1.95; white-space:pre-wrap; word-break:break-word}
+.result__actions{display:grid; gap:12px; margin-top:22px}
+.result__hint{font-size:13px; color:var(--ink-soft); line-height:1.85; margin-top:4px}
+.toast{position:fixed; left:50%; bottom:26px; transform:translateX(-50%) translateY(30px); background:var(--ink); color:#fff; padding:13px 22px; border-radius:999px; font-size:14px; opacity:0; pointer-events:none; transition:.3s; z-index:60}
+.toast.is-show{opacity:1; transform:translateX(-50%) translateY(0)}
+.saved{text-align:center; font-size:12px; color:var(--ink-soft); margin-top:14px; min-height:1.2em}
+.restart{display:inline-block; margin-top:18px; font-size:13px; color:var(--ink-soft); background:none; border:0; text-decoration:underline; cursor:pointer}
+</style>
+</head>
+<body>
+<a class="skip" href="#stage">本文へスキップ</a>
+<header class="topbar">
+  <div class="wrap">
+    <a class="brand" href="index.html"><img src="assets/logo.png" alt="" width="30" height="30"><span>Refra美<small>MANtoMAN BANSOU</small></span></a>
+    <a class="back" href="index.html">← LPに戻る</a>
+  </div>
+</header>
+
+<div class="head">
+  <p class="ey">Consultation</p>
+  <h1>「私の場合は？」を、準備する</h1>
+  <p>7つの質問に答えると、LINEに送る相談メモが完成します。<br>約2分・選ぶだけ。決めていなくて大丈夫です。</p>
+</div>
+
+<div class="bar" id="bar" hidden>
+  <div class="bar__track"><div class="bar__fill" id="barFill"></div></div>
+  <div class="bar__meta"><span id="barStep">STEP 1 / 7</span><span id="barPct">0%</span></div>
+</div>
+
+<main class="stage" id="stage">
+  <div class="wrap">
+    <div class="card" id="card" aria-live="polite"></div>
+    <p class="saved" id="saved"></p>
+  </div>
+</main>
+
+<p class="privacy">
+  <strong>この回答は、相談準備にのみ使います。</strong><br>
+  サーバーには自動送信されません。あなたの端末（ブラウザ）にだけ途中保存され、最後にご自身でコピーしてLINEから送ります。<br>
+  この画面では、お顔の写真・病歴・診断名はお聞きしません。
+</p>
+
+<div class="toast" id="toast">コピーしました</div>
+
+<script>
+/* ========================= CONFIG ========================= */
+/* LINE導線：エルメ（L Message）の流入経路URL「Refra美LP_個別相談」。
+   別経路に変える場合はこの1行を差し替えるだけでOK。 */
+var LINE_URL = "https://s.lmes.jp/landing-qr/2006493797-jG9A4Zam?uLand=98wMPb";
+var STORAGE_KEY = "refrabi_consult_v1";
+/* ========================================================== */
+
+var QUESTIONS = [
+  { id:"worry", type:"radio", q:"いちばん気になる、お顔のお悩みは？",
+    opts:["ほうれい線","二重あご","フェイスライン","目元・口元のたるみ","左右差","疲れて見える"], other:true },
+  { id:"since", type:"radio", q:"いつ頃から気になっていますか？",
+    opts:["ここ半年くらい","1〜2年前から","3年以上前から","はっきりとは分からない"] },
+  { id:"tried", type:"checkbox", q:"これまでに試したことは？",
+    hint:"あてはまるものを、いくつでも選べます", opts:["顔トレ","マッサージ","美顔器・化粧品","美容医療","特にない"], other:true },
+  { id:"habit", type:"checkbox", q:"普段、気になる習慣や状態は？",
+    hint:"あてはまるものを、いくつでも選べます", opts:["スマホ時間が長い","猫背・反り腰","首肩がこる","呼吸が浅い","食いしばり","左右どちらかで噛む","よく分からない"] },
+  { id:"time", type:"radio", q:"毎日のセルフケアに、無理なく使えそうな時間は？",
+    hint:"レッスンで習ったケアを、ご自宅で続ける1日の目安です", opts:["3分","5分","10分","日によって違う"] },
+  { id:"future", type:"text", q:"3ヶ月後、鏡を見たときにどう思えたら嬉しいですか？",
+    hint:"ひとことでも大丈夫です", placeholder:"例：疲れて見えるねと言われなくなって、自分の顔を少し好きになれていたら…" },
+  { id:"ask", type:"text", q:"個別相談で聞いてみたいことは？",
+    hint:"まだ無ければ空欄でOKです（任意）", placeholder:"例：私の場合、何から始めるのが良いですか？　コースの違いを詳しく知りたい など" }
+];
+
+var LABELS = {
+  worry:"いちばん気になる悩み", since:"気になり始めた時期", tried:"これまで試したこと",
+  habit:"気になる習慣・状態", time:"1日のセルフケア時間", future:"3ヶ月後どう思えたら嬉しいか", ask:"個別相談で聞きたいこと"
+};
+
+var state = load();
+var step = 0; // 0..QUESTIONS.length (last index = result)
+var TOTAL = QUESTIONS.length;
+
+var card = document.getElementById('card');
+var bar = document.getElementById('bar');
+var barFill = document.getElementById('barFill');
+var barStep = document.getElementById('barStep');
+var barPct = document.getElementById('barPct');
+var savedEl = document.getElementById('saved');
+
+function load(){
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; }
+  catch(e){ return {}; }
+}
+function save(){
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); flashSaved(); }
+  catch(e){ /* private mode etc: just skip persistence */ }
+}
+var savedTimer;
+function flashSaved(){
+  savedEl.textContent = "✓ 途中まで、この端末に保存しました";
+  clearTimeout(savedTimer);
+  savedTimer = setTimeout(function(){ savedEl.textContent = ""; }, 1800);
+}
+
+function progress(){
+  if (step === 0 && !hasAnyAnswer()) { bar.hidden = true; return; }
+  bar.hidden = false;
+  var shown = Math.min(step, TOTAL);
+  var pct = Math.round(shown / TOTAL * 100);
+  barFill.style.width = pct + "%";
+  barStep.textContent = step < TOTAL ? ("STEP " + (step+1) + " / " + TOTAL) : ("完了 / " + TOTAL);
+  barPct.textContent = (step < TOTAL ? pct : 100) + "%";
+}
+function hasAnyAnswer(){ return Object.keys(state).some(function(k){ var v=state[k]; return v && (v.length||typeof v==='string'&&v.trim()); }); }
+
+function render(){
+  window.scrollTo({top:0, behavior:'auto'});
+  if (step >= TOTAL) return renderResult();
+  var Q = QUESTIONS[step];
+  var html = '';
+  html += '<div class="qno">QUESTION ' + (step+1) + ' / ' + TOTAL + '</div>';
+  html += '<h2 class="qtitle">' + Q.q + '</h2>';
+  if (Q.hint) html += '<p class="qhint">' + Q.hint + '</p>';
+
+  if (Q.type === 'text') {
+    var val = state[Q.id] ? esc(state[Q.id]) : '';
+    html += '<textarea id="ftext" placeholder="'+ (Q.placeholder||'') +'">'+val+'</textarea>';
+  } else {
+    var isMulti = Q.type === 'checkbox';
+    var current = state[Q.id] || (isMulti ? [] : '');
+    html += '<div class="opts">';
+    Q.opts.forEach(function(o){
+      var on = isMulti ? current.indexOf(o) > -1 : current === o;
+      html += '<label class="opt'+(on?' is-on':'')+'">'
+        + '<input type="'+(isMulti?'checkbox':'radio')+'" name="'+Q.id+'" value="'+esc(o)+'"'+(on?' checked':'')+'>'
+        + '<span class="box"></span><span>'+o+'</span></label>';
+    });
+    if (Q.other) {
+      var otherVal = (isMulti ? current.filter(isOther) : (isOtherStr(current)?current:'') );
+      var otherText = '';
+      if (isMulti && otherVal.length) otherText = otherVal[0].replace(/^その他：?/,'');
+      else if (!isMulti && isOtherStr(current)) otherText = current.replace(/^その他：?/,'');
+      var otherOn = (isMulti ? otherVal.length>0 : isOtherStr(current));
+      html += '<label class="opt opt-other'+(otherOn?' is-on':'')+'">'
+        + '<input type="'+(isMulti?'checkbox':'radio')+'" name="'+Q.id+'" value="__other__"'+(otherOn?' checked':'')+'>'
+        + '<span class="box"></span><span>その他</span></label>';
+      html += '<input type="text" id="otherText" placeholder="その他の内容（自由記入）" value="'+esc(otherText)+'"'+(otherOn?'':' style="display:none"')+'>';
+    }
+    html += '</div>';
+  }
+
+  // nav
+  var canBack = step > 0;
+  var required = (Q.id !== 'ask'); // 最後の「聞きたいこと」だけ任意
+  html += '<div class="nav">';
+  if (canBack) html += '<button class="btn btn--ghost" id="back">← 戻る</button>';
+  html += '<button class="btn btn--primary" id="next"'+(required?' disabled':'')+'>'
+        + (step === TOTAL-1 ? '相談メモを作る' : '次へ →') + '</button>';
+  html += '</div>';
+
+  card.innerHTML = html;
+  wire(Q, required);
+  progress();
+}
+
+function wire(Q, required){
+  var nextBtn = document.getElementById('next');
+  var backBtn = document.getElementById('back');
+  if (backBtn) backBtn.onclick = function(){ step--; render(); };
+
+  function refreshNext(){
+    if (!required) { nextBtn.disabled = false; return; }
+    nextBtn.disabled = !isAnswered(Q);
+  }
+
+  if (Q.type === 'text') {
+    var ta = document.getElementById('ftext');
+    ta.addEventListener('input', function(){ state[Q.id] = ta.value; save(); refreshNext(); });
+    refreshNext();
+  } else {
+    var isMulti = Q.type === 'checkbox';
+    var otherInput = document.getElementById('otherText');
+    card.querySelectorAll('.opt input').forEach(function(inp){
+      inp.addEventListener('change', function(){
+        collect(Q, isMulti, otherInput);
+        // toggle visual + other field
+        card.querySelectorAll('.opt').forEach(function(l){
+          var i = l.querySelector('input'); l.classList.toggle('is-on', i.checked);
+        });
+        if (otherInput){
+          var otherChecked = card.querySelector('input[value="__other__"]').checked;
+          otherInput.style.display = otherChecked ? '' : 'none';
+          if (otherChecked) otherInput.focus();
+        }
+        refreshNext();
+      });
+    });
+    if (otherInput){
+      otherInput.addEventListener('input', function(){ collect(Q, isMulti, otherInput); refreshNext(); });
+    }
+    refreshNext();
+    // radio: auto-advance feel is avoided to allow "その他" input; user taps 次へ
+  }
+
+  nextBtn.onclick = function(){
+    if (Q.type === 'text'){ state[Q.id] = (document.getElementById('ftext').value||'').trim(); }
+    save();
+    step++; render();
+  };
+}
+
+function collect(Q, isMulti, otherInput){
+  var otherChecked = otherInput && card.querySelector('input[value="__other__"]').checked;
+  var otherVal = otherChecked && otherInput.value.trim() ? ('その他：'+otherInput.value.trim()) : (otherChecked ? 'その他' : '');
+  if (isMulti){
+    var arr = [];
+    card.querySelectorAll('.opt input:checked').forEach(function(i){
+      if (i.value === '__other__'){ if(otherVal) arr.push(otherVal); }
+      else arr.push(i.value);
+    });
+    state[Q.id] = arr;
+  } else {
+    var sel = card.querySelector('.opt input:checked');
+    if (!sel) { state[Q.id] = ''; }
+    else if (sel.value === '__other__'){ state[Q.id] = otherVal || 'その他'; }
+    else state[Q.id] = sel.value;
+  }
+  save();
+}
+
+function isAnswered(Q){
+  var v = state[Q.id];
+  if (Q.type === 'checkbox') return Array.isArray(v) && v.length > 0;
+  if (Q.type === 'text') return !!(v && v.trim());
+  // radio: if "その他" selected, need text; collect() stores 'その他' w/o text — treat as answered only if not bare "その他"? allow bare.
+  return !!(v && (''+v).trim());
+}
+function isOther(s){ return /^その他/.test(s); }
+function isOtherStr(s){ return typeof s === 'string' && /^その他/.test(s); }
+
+/* ---------- result ---------- */
+function buildMemo(){
+  function line(label, val){
+    if (Array.isArray(val)) val = val.join('、');
+    return label + '｜' + (val && (''+val).trim() ? val : '（未記入）');
+  }
+  var m = '';
+  m += '【Refra美 個別相談】\n';
+  m += 'お名前｜（LINEの表示名でOK）\n';
+  m += line('いちばん気になる悩み', state.worry) + '\n';
+  m += line('気になり始めた時期', state.since) + '\n';
+  m += line('これまで試したこと', state.tried) + '\n';
+  m += line('気になる習慣・状態', state.habit) + '\n';
+  m += line('1日のセルフケア時間', state.time) + '\n';
+  m += '\n■ 3ヶ月後、鏡を見たときにどう思えたら嬉しいか\n';
+  m += (state.future && state.future.trim() ? state.future.trim() : '（未記入）') + '\n';
+  m += '\n■ 個別相談で聞きたいこと\n';
+  m += (state.ask && state.ask.trim() ? state.ask.trim() : '（特になし）') + '\n';
+  m += '\nよろしくお願いします。';
+  return m;
+}
+
+function renderResult(){
+  bar.hidden = false; barFill.style.width='100%'; barStep.textContent='完了 / '+TOTAL; barPct.textContent='100%';
+  var memo = buildMemo();
+  var html = '<div class="result">';
+  html += '<div class="qno">READY</div>';
+  html += '<h2>相談メモができました</h2>';
+  html += '<p class="result__hint">下の内容をコピーして、LINEを開いて貼り付けて送ってください。まだ決めていなくて大丈夫です。</p>';
+  html += '<div class="memo" id="memo">'+esc(memo)+'</div>';
+  html += '<div class="result__actions">';
+  html += '<button class="btn btn--copy" id="copyBtn">メモをコピーする</button>';
+  html += '<a class="btn btn--line" id="lineBtn" href="'+LINE_URL+'" target="_blank" rel="noopener">コピーしたらLINEを開く</a>';
+  html += '<button class="btn btn--ghost" id="back">← 回答を見直す</button>';
+  html += '</div>';
+  html += '<p class="result__hint" style="margin-top:16px">※ 送信ボタンではありません。LINEに貼り付けて、あなたのタイミングで送ってください。回答はこの端末にだけ保存されています。</p>';
+  html += '<button class="restart" id="restart">はじめからやり直す</button>';
+  html += '</div>';
+  card.innerHTML = html;
+
+  document.getElementById('back').onclick = function(){ step = TOTAL-1; render(); };
+  document.getElementById('restart').onclick = function(){
+    if (confirm('入力した内容を消して、はじめからやり直しますか？')){
+      state = {}; try{ localStorage.removeItem(STORAGE_KEY);}catch(e){} step = 0; render();
+    }
+  };
+  document.getElementById('copyBtn').onclick = function(){ copyMemo(memo); };
+}
+
+function copyMemo(text){
+  function ok(){ toast('コピーしました'); }
+  function fallback(){
+    // 選択させるフォールバック（LINE内ブラウザ等）
+    var memoEl = document.getElementById('memo');
+    var range = document.createRange(); range.selectNodeContents(memoEl);
+    var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range);
+    try {
+      var done = document.execCommand('copy');
+      sel.removeAllRanges();
+      if (done) ok(); else toast('メモを長押しして「コピー」を選んでください');
+    } catch(e){ toast('メモを長押しして「コピー」を選んでください'); }
+  }
+  if (navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(ok).catch(fallback);
+  } else {
+    // textarea trick then fallback
+    try {
+      var t = document.createElement('textarea');
+      t.value = text; t.style.position='fixed'; t.style.opacity='0';
+      document.body.appendChild(t); t.focus(); t.select();
+      var done = document.execCommand('copy');
+      document.body.removeChild(t);
+      if (done) ok(); else fallback();
+    } catch(e){ fallback(); }
+  }
+}
+
+var toastEl = document.getElementById('toast'), toastTimer;
+function toast(msg){
+  toastEl.textContent = msg; toastEl.classList.add('is-show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(function(){ toastEl.classList.remove('is-show'); }, 2200);
+}
+
+function esc(s){ return (s==null?'':(''+s)).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+
+/* resume where left off if there is saved progress */
+(function init(){
+  // start at first unanswered required question if partial data exists
+  if (hasAnyAnswer()){
+    var idx = 0;
+    for (var i=0;i<QUESTIONS.length;i++){
+      if (isAnswered(QUESTIONS[i])) idx = i+1; else break;
+    }
+    step = Math.min(idx, TOTAL);
+  }
+  render();
+})();
+</script>
+</body>
+</html>
